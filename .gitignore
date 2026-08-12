@@ -15,3 +15,17 @@ buildNumber.properties
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+# Node/React
+node_modules/
+build/
+dist/
+.env
+.env.local
+
+# Java/Spring (if not already present)
+target/
+*.class
+.idea/
+*.iml
+.DS_Store
