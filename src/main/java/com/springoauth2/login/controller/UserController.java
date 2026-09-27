@@ -4,6 +4,7 @@ import com.springoauth2.login.dto.LoginDTO;
 import com.springoauth2.login.dto.UserDTO;
 import com.springoauth2.login.entity.UserEntity;
 import com.springoauth2.login.repo.UserRepository;
+import com.springoauth2.login.security.AppPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
@@ -11,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -60,23 +62,10 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public ResponseEntity<String> currentUser(Authentication authentication) {
-        String email;
-        if (authentication instanceof OAuth2AuthenticationToken token) {
-            Map<String, Object> attributes = token.getPrincipal().getAttributes();
-            String registrationId = token.getAuthorizedClientRegistrationId();
-
-            email = (String) attributes.get("email");
-
-            if (email == null && "github".equalsIgnoreCase(registrationId)) {
-                email = attributes.get("login") + "@github.com";
-            }
-        }
-        else email = authentication.getName();
-        UserEntity user = userRepository.findByEmail(email)
+    public ResponseEntity<String> currentUser(@AuthenticationPrincipal AppPrincipal principal) {
+        UserEntity user = userRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
-
-        return ResponseEntity.ok("Logged in as: " + user.getName() + " (" + user.getEmail() + ")");
+        return ResponseEntity.ok("Current User: " + user.getName() + ", Email: " + user.getEmail());
     }
 
     @PostMapping("/logout")

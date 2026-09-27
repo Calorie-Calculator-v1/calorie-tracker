@@ -25,7 +25,7 @@ public class FoodLogEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "food_id", nullable = false)
-    private FoodLogEntity food; // SWAP LATER
+    private Food food; // SWAP LATER
 
     private BigDecimal quantity;
 
