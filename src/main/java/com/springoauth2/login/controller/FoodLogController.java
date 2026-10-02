@@ -1,5 +1,6 @@
 package com.springoauth2.login.controller;
 
+import com.springoauth2.login.dto.FoodLogResponseDTO;
 import com.springoauth2.login.dto.FoodRequestDTO;
 import com.springoauth2.login.entity.FoodLogEntity;
 import com.springoauth2.login.repo.FoodLogRepo;
@@ -31,8 +32,13 @@ public class FoodLogController {
     }
 
     @GetMapping
-    public List<FoodLogEntity> getMeals(@AuthenticationPrincipal AppPrincipal principal, @RequestParam(required = false) LocalDate date) {
-        return foodLogRepo.findByUser_IdAndLoggedDate(principal.getUserId(), date != null ? date : LocalDate.now());
+    public List<FoodLogResponseDTO> getMeals(@AuthenticationPrincipal AppPrincipal principal,
+                                             @RequestParam(required = false) LocalDate date) {
+        Long userId = principal.getUserId();
+        return foodLogRepo.findByUser_IdAndLoggedDate(userId, date != null ? date : LocalDate.now())
+                .stream()
+                .map(FoodLogResponseDTO::from)
+                .toList();
     }
 
     @GetMapping("/summary")
@@ -41,5 +47,11 @@ public class FoodLogController {
         Long userId = principal.getUserId();
         LocalDate targetDate = date != null ? date : LocalDate.now();
         return foodLogRepo.getTotalCaloriesForDate(userId, targetDate).orElse(BigDecimal.ZERO);
+    }
+
+    @GetMapping("/history")
+    public List<FoodLogRepo.DailyTotal> getDailyHistory(@AuthenticationPrincipal AppPrincipal principal) {
+        Long userId = principal.getUserId();
+        return foodLogRepo.getDailyHistory(userId);
     }
 }

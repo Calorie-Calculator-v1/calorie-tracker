@@ -26,4 +26,19 @@ public interface FoodLogRepo extends JpaRepository<FoodLogEntity, Long> {
         WHERE fl.user.id = :userId AND fl.loggedDate = :date
         """)
     Optional<BigDecimal> getTotalCaloriesForDate(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+    @Query("""
+    SELECT fl.loggedDate AS date, SUM(fl.quantity * f.energyPerServingKcal) AS totalCalories
+    FROM FoodLogEntity fl
+    JOIN fl.food f
+    WHERE fl.user.id = :userId
+    GROUP BY fl.loggedDate
+    ORDER BY fl.loggedDate DESC
+    """)
+    List<DailyTotal> getDailyHistory(@Param("userId") Long userId);
+
+    interface DailyTotal {
+        LocalDate getDate();
+        BigDecimal getTotalCalories();
+    }
 }
