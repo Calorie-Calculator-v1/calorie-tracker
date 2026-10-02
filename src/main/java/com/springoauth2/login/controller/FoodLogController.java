@@ -2,6 +2,7 @@ package com.springoauth2.login.controller;
 
 import com.springoauth2.login.dto.FoodLogResponseDTO;
 import com.springoauth2.login.dto.FoodRequestDTO;
+import com.springoauth2.login.dto.HistoryDayDTO;
 import com.springoauth2.login.entity.FoodLogEntity;
 import com.springoauth2.login.repo.FoodLogRepo;
 import com.springoauth2.login.security.AppPrincipal;
@@ -11,7 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1.0/me/foodlog")
@@ -50,8 +53,36 @@ public class FoodLogController {
     }
 
     @GetMapping("/history")
-    public List<FoodLogRepo.DailyTotal> getDailyHistory(@AuthenticationPrincipal AppPrincipal principal) {
-        Long userId = principal.getUserId();
-        return foodLogRepo.getDailyHistory(userId);
+    public List<HistoryDayDTO> getHistory(@AuthenticationPrincipal AppPrincipal principal) {
+        List<FoodLogEntity> allLogs = foodLogRepo.findByUser_IdOrderByLoggedDateDesc(principal.getUserId());
+
+        return allLogs.stream()
+                .collect(Collectors.groupingBy(FoodLogEntity::getLoggedDate))
+                .entrySet().stream()
+                .map(entry -> {
+                    LocalDate date = entry.getKey();
+                    List<FoodLogEntity> logsForDay = entry.getValue();
+
+                    List<FoodLogResponseDTO> meals = logsForDay.stream()
+                            .map(FoodLogResponseDTO::from)
+                            .toList();
+
+                    BigDecimal totalCalories = meals.stream()
+                            .map(FoodLogResponseDTO::totalCalories)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal totalProtein = meals.stream()
+                            .map(FoodLogResponseDTO::totalProtein)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal totalCarbs = meals.stream()
+                            .map(FoodLogResponseDTO::totalCarbs)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal totalFat = meals.stream()
+                            .map(FoodLogResponseDTO::totalFat)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                    return new HistoryDayDTO(date, totalCalories, totalProtein, totalCarbs, totalFat, meals);
+                })
+                .sorted(Comparator.comparing(HistoryDayDTO::date).reversed())
+                .toList();
     }
 }
