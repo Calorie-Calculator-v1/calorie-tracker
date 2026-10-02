@@ -1,5 +1,6 @@
 package com.springoauth2.login.controller;
 
+import com.springoauth2.login.dto.FoodSearchResultDTO;
 import com.springoauth2.login.entity.Food;
 import com.springoauth2.login.repo.FoodRepository;
 import org.springframework.stereotype.Controller;
@@ -21,7 +22,11 @@ public class FoodController {
     }
 
     @GetMapping("/search")
-    public List<Food> searchFoods(@RequestParam String q) {
-        return foodRepository.findByNameContainingIgnoreCase(q);
+    public List<FoodSearchResultDTO> searchFoods(@RequestParam String q) {
+        return foodRepository.findByNameContainingIgnoreCase(q)
+                .stream()
+                .map(FoodSearchResultDTO::from)
+                .toList();
     }
+
 }
