@@ -7,6 +7,7 @@ import com.springoauth2.login.entity.FoodLogEntity;
 import com.springoauth2.login.repo.FoodLogRepo;
 import com.springoauth2.login.security.AppPrincipal;
 import com.springoauth2.login.service.FoodLogService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,11 +46,18 @@ public class FoodLogController {
     }
 
     @GetMapping("/summary")
-    public BigDecimal getDailySummary(@AuthenticationPrincipal AppPrincipal principal,
-                                      @RequestParam(required = false) LocalDate date) {
-        Long userId = principal.getUserId();
+    public HistoryDayDTO getDailySummary(@AuthenticationPrincipal AppPrincipal principal,
+                                         @RequestParam(required = false) LocalDate date) {
         LocalDate targetDate = date != null ? date : LocalDate.now();
-        return foodLogRepo.getTotalCaloriesForDate(userId, targetDate).orElse(BigDecimal.ZERO);
+        List<FoodLogResponseDTO> meals = foodLogRepo.findByUser_IdAndLoggedDate(principal.getUserId(), targetDate)
+                .stream().map(FoodLogResponseDTO::from).toList();
+
+        BigDecimal totalCalories = meals.stream().map(FoodLogResponseDTO::totalCalories).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalProtein = meals.stream().map(FoodLogResponseDTO::totalProtein).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCarbs = meals.stream().map(FoodLogResponseDTO::totalCarbs).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalFat = meals.stream().map(FoodLogResponseDTO::totalFat).reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new HistoryDayDTO(targetDate, totalCalories, totalProtein, totalCarbs, totalFat, meals);
     }
 
     @GetMapping("/history")
@@ -84,5 +92,17 @@ public class FoodLogController {
                 })
                 .sorted(Comparator.comparing(HistoryDayDTO::date).reversed())
                 .toList();
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteLog(@AuthenticationPrincipal AppPrincipal principal, @PathVariable Long id) {
+        Long userId = principal.getUserId();
+        boolean exists = foodLogRepo.existsByIdAndUser_Id(id, userId);
+        if (!exists) {
+            return ResponseEntity.status(404).body("Log not found or does not belong to you");
+        }
+
+        foodLogRepo.deleteByIdAndUser_Id(id, userId);
+        return ResponseEntity.ok("Deleted log " + id);
     }
 }
