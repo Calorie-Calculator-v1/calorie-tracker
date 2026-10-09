@@ -1,0 +1,14 @@
+# Secrets / local config
+**/application.properties
+**/application.yml
+**/application-*.properties
+**/application-*.yml
+.env
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Build output
+target/

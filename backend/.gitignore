@@ -9,4 +9,3 @@ src/main/resources/application.yml
 
 # Ignore build directories
 target/
-.mvn/
