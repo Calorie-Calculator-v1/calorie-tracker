@@ -3,6 +3,7 @@ package com.springoauth2.login.service;
 import com.springoauth2.login.entity.UserEntity;
 import com.springoauth2.login.enums.AuthProvider;
 import com.springoauth2.login.repo.UserRepository;
+import com.springoauth2.login.security.CustomOidcUser;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -41,6 +42,6 @@ public class CustomOidcUserService extends OidcUserService {
 
         userRepository.save(user);
 
-        return oidcUser;
+        return new CustomOidcUser(oidcUser, user.getId());
     }
 }

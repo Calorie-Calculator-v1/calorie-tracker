@@ -14,7 +14,7 @@ public class Food {
 
     @Id
     @Column(name = "Food_ID")
-    private Integer id; // mediumint fits comfortably in Java's Integer
+    private Integer id;
 
     @Column(name = "Food_Name")
     private String name;
