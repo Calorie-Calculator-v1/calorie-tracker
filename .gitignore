@@ -1,0 +1,27 @@
+### IDE & System Files ###
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+
+### Spring Boot (backend) ###
+backend/target/
+backend/*.jar
+backend/*.war
+backend/.mvn/wrapper/maven-wrapper.jar
+**/application-secret.properties
+**/application-local.properties
+
+### React / Vite (frontend) ###
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/test-results/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+!frontend/.env.example
+npm-debug.log*
+yarn-debug.log*
