@@ -49,15 +49,17 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> loginUser(@Valid @RequestBody LoginDTO login, HttpServletRequest request){
+    public ResponseEntity<String> loginUser(@Valid @RequestBody LoginDTO login, HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response){
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(login.getEmail(),login.getPassword())
+                new UsernamePasswordAuthenticationToken(login.getEmail(), login.getPassword())
         );
-        SecurityContext context = SecurityContextHolder.getContext();
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
 
         HttpSession session = request.getSession(true);
         session.setAttribute("SPRING_SECURITY_CONTEXT", context);
+
         return ResponseEntity.ok("Login Successful");
     }
 
