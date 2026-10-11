@@ -31,7 +31,9 @@ public class EmailService {
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(fromEmail);
+            if (fromEmail != null && !fromEmail.isBlank()) {
+                message.setFrom(fromEmail);
+            }
             message.setTo(toEmail);
             message.setSubject("Verify your account");
             message.setText("Click the link to verify your account:\n\n" + link);
@@ -40,7 +42,7 @@ public class EmailService {
             mailSender.send(message);
             log.info("Verification email successfully sent to {}", toEmail);
         } catch (Exception ex) {
-            log.error("Failed to send verification email to {}. Root cause: {}", toEmail, ex.getMessage(), ex);
+            log.error("Failed to send verification email to {}. Root cause: {}", toEmail, ex.getMessage());
         }
     }
 }
