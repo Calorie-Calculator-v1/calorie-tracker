@@ -11,11 +11,18 @@ const getBaseUrl = () => {
 
 const BASE = getBaseUrl().replace(/\/$/, '')
 
-export async function request(path, { body, ...options } = {}) {
+export async function request(path, { body, signal, ...options } = {}) {
   let response
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+  // Use consumer signal if provided, or fall back to internal 15s timeout
+  const combinedSignal = signal || controller.signal
+
   try {
     response = await fetch(`${BASE}${path}`, {
       ...options,
+      signal: combinedSignal,
       credentials: 'include',
       headers: {
         Accept: 'application/json, text/plain',
@@ -25,8 +32,12 @@ export async function request(path, { body, ...options } = {}) {
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     })
   } catch (error) {
-    if (error.name === 'AbortError') throw error
+    if (error.name === 'AbortError') {
+      throw new Error('Server request timed out. The backend is waking up or connecting, please try again.')
+    }
     throw new Error('Cannot reach the server. Check that the backend is running and try again.', { cause: error })
+  } finally {
+    clearTimeout(timeoutId)
   }
 
   const text = await response.text()
