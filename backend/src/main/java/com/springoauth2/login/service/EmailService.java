@@ -3,46 +3,63 @@ package com.springoauth2.login.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
-
-    private final JavaMailSender mailSender;
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${app.base-url:https://calorie-tracker-backend-vgqg.onrender.com}")
     private String baseUrl;
 
-    @Value("${spring.mail.username:}")
-    private String fromEmail;
+    @Value("${brevo.api.key:}")
+    private String brevoApiKey;
 
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-    }
+    @Value("${brevo.sender.email:}")
+    private String senderEmail;
 
     @Async
     public void sendVerificationEmail(String toEmail, String token) {
         String link = baseUrl + "/api/v1.0/verify?token=" + token;
 
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            if (fromEmail != null && !fromEmail.isBlank()) {
-                message.setFrom(fromEmail);
-            }
-            message.setTo(toEmail);
-            message.setSubject("Verify your account");
-            message.setText("Click the link to verify your account:\n\n" + link);
+        if (brevoApiKey == null || brevoApiKey.isBlank()) {
+            log.warn("BREVO_API_KEY is not configured. Verification link: {}", link);
+            return;
+        }
 
-            log.info("Dispatching verification email to {}...", toEmail);
-            mailSender.send(message);
-            log.info("Verification email successfully sent to {}", toEmail);
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", brevoApiKey);
+
+            Map<String, Object> body = Map.of(
+                    "sender", Map.of("name", "Gainly", "email", senderEmail),
+                    "to", List.of(Map.of("email", toEmail)),
+                    "subject", "Verify your Gainly account",
+                    "htmlContent", "<p>Welcome to Gainly!</p><p>Please <a href=\"" + link + "\">click here to verify your account</a>.</p>"
+            );
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    "https://api.brevo.com/v3/smtp/email",
+                    request,
+                    String.class
+            );
+
+            log.info("Verification email sent to {} via Brevo! Status: {}", toEmail, response.getStatusCode());
         } catch (Exception ex) {
-            log.error("Failed to send verification email to {}. Root cause: {}", toEmail, ex.getMessage());
+            log.error("Failed to send verification email to {}: {}", toEmail, ex.getMessage());
         }
     }
 }
