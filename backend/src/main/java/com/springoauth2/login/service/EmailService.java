@@ -15,10 +15,10 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${app.base-url}")
+    @Value("${app.base-url:https://calorie-tracker-backend-vgqg.onrender.com}")
     private String baseUrl;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.username:}")
     private String fromEmail;
 
     public EmailService(JavaMailSender mailSender) {
