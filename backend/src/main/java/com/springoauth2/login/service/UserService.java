@@ -36,20 +36,15 @@ public class UserService {
         newUser.setEmail(request.getEmail());
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
 
-        // Default to true so users can immediately log in even if email fails
-        newUser.setEnabled(true);
+        // Disabled until verified via email link:
+        newUser.setEnabled(false);
         newUser.setVerificationToken(UUID.randomUUID().toString());
 
         userRepository.save(newUser);
-        log.info("User {} successfully saved in database", newUser.getEmail());
+        log.info("User {} saved as pending verification", newUser.getEmail());
 
-        // Safe email dispatch: will not crash registration if SMTP fails
-        try {
-            emailService.sendVerificationEmail(newUser.getEmail(), newUser.getVerificationToken());
-            log.info("Verification email sent successfully to {}", newUser.getEmail());
-        } catch (Exception ex) {
-            log.error("Failed to send verification email to {}. Error: {}", newUser.getEmail(), ex.getMessage(), ex);
-        }
+        // Asynchronous call: returns immediately so HTTP response is instant
+        emailService.sendVerificationEmail(newUser.getEmail(), newUser.getVerificationToken());
     }
 
     public void verifyUser(String token) {
